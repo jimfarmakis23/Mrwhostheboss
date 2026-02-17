@@ -2,8 +2,8 @@ name: Αυτόματη ενημέρωση links.txt από YouTube RSS
 
 on:
   schedule:
-    # Τρέχει κάθε ώρα (στο λεπτό 1)
-    - cron: '1 * * * *'
+    # Τρέχει κάθε 1 λεπτό
+    - cron: '* * * * *'
   workflow_dispatch:
 
 permissions:
@@ -25,11 +25,28 @@ jobs:
           
           echo "Διαβάζω το RSS από: $RSS_URL"
           
-          # Κατέβασε το RSS και βγάλε το πιο πρόσφατο link
-          LATEST_URL=$(curl -s "$RSS_URL" | grep -oP '(?<=<link rel="alternate" href=")[^"]+' | head -1)
+          # Κατέβασε το RSS και βγάλε το link του πρώτου (τελευταίου) βίντεο
+          RSS_CONTENT=$(curl -s "$RSS_URL")
+          
+          # Μέθοδος 1: Με grep (πιο απλή)
+          LATEST_URL=$(echo "$RSS_CONTENT" | grep -o 'https://www.youtube.com/watch?v=[^"]*' | head -1)
+          
+          # Μέθοδος 2: Με xml αν αποτύχει το grep
+          if [ -z "$LATEST_URL" ]; then
+            echo "⚠️  Το grep δεν βρήκε link, δοκιμάζω εναλλακτική..."
+            LATEST_URL=$(echo "$RSS_CONTENT" | grep -oP '(?<=<link rel="alternate" href=")[^"]+' | head -1)
+          fi
+          
+          # Μέθοδος 3: Αν ακόμα δεν βρήκε, δοκίμασε με awk
+          if [ -z "$LATEST_URL" ]; then
+            echo "⚠️  Δοκιμάζω με awk..."
+            LATEST_URL=$(echo "$RSS_CONTENT" | awk -F 'href="' '/<link rel="alternate"/ {print $2}' | awk -F '"' '{print $1}' | head -1)
+          fi
           
           if [ -z "$LATEST_URL" ]; then
             echo "❌ Δεν βρέθηκε link στο RSS"
+            echo "Περιεχόμενο RSS για debugging:"
+            echo "$RSS_CONTENT" | head -20
             exit 1
           fi
           
@@ -42,27 +59,29 @@ jobs:
         run: |
           FILE="data/links.txt"
           
+          # Δημιούργησε το φάκελο data αν δεν υπάρχει
+          mkdir -p data
+          
           # Αν το αρχείο δεν υπάρχει, δημιούργησέ το
           if [ ! -f "$FILE" ]; then
             echo "📁 Δεν βρέθηκε αρχείο. Το δημιουργώ..."
-            mkdir -p data
             echo "$LATEST_LINK" > "$FILE"
             echo "✅ Δημιουργήθηκε με το τελευταίο link."
             exit 0
           fi
           
-          # Διάβασε την πρώτη γραμμή (το πιο πρόσφατο link που έχεις ήδη)
-          FIRST_LINE=$(head -n 1 "$FILE")
+          # Διάβασε όλο το αρχείο
+          EXISTING_LINKS=$(cat "$FILE")
           
-          # Αν το link από το RSS είναι ίδιο, μην κάνεις τίποτα
-          if [ "$FIRST_LINE" = "$LATEST_LINK" ]; then
-            echo "⏸️  Δεν υπάρχει νέο βίντεο. Κανένα update."
+          # Έλεγξε αν το νέο link υπάρχει ΗΔΗ στο αρχείο
+          if echo "$EXISTING_LINKS" | grep -q "$LATEST_LINK"; then
+            echo "ℹ️  Το link υπάρχει ήδη στο αρχείο. Κανένα update."
             exit 0
           fi
           
-          # Αν είναι διαφορετικό (νέο βίντεο), πρόσθεσέ το στην αρχή
+          # Αν είναι νέο link, πρόσθεσέ το στην αρχή
           echo "🎉 ΝΕΟ ΒΙΝΤΕΟ: $LATEST_LINK"
-          echo -e "$LATEST_LINK\n$(cat $FILE)" > "$FILE"
+          echo -e "$LATEST_LINK\n$EXISTING_LINKS" > "$FILE"
           echo "✅ Το links.txt ενημερώθηκε!"
 
       - name: Κάνε commit και push τις αλλαγές
