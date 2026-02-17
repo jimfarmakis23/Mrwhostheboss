@@ -30,13 +30,13 @@
     <div id="video-container"></div>
 
     <script>
-        // Χρήση AllOrigins για παρακάμψη του CORS
-        var proxyUrl = 'https://api.allorigins.win/raw?url=';
+        // Χρήση CORS-anywhere για παρακάμψη του CORS
+        var proxyUrl = 'https://cors-anywhere.herokuapp.com/'; // Proxy URL του CORS-anywhere
         var feedUrl = "https://www.youtube.com/feeds/videos.xml?channel_id=UCsTcErHg8oDvUnTzoqsYeNw";  // Feed URL
 
         // Φόρτωμα του RSS feed μέσω AJAX με χρήση του proxy server
         $.ajax({
-            url: proxyUrl + encodeURIComponent(feedUrl),
+            url: proxyUrl + feedUrl,  // Σύνδεση με το proxy
             type: "GET",
             dataType: "xml",
             success: function(data) {
