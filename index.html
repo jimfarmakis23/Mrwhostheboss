@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YouTube RSS Feed</title>
+    <title>YouTube RSS Feed - Τελευταία 20 βίντεο</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <style>
         #video-container {
@@ -25,6 +25,8 @@
         .video-item p {
             margin: 10px 0;
             font-size: 14px;
+            height: 40px;
+            overflow: hidden;
         }
         
         @media (max-width: 768px) {
@@ -41,13 +43,12 @@
     </style>
 </head>
 <body>
-    <h1>YouTube Channel Videos - Τελευταία 10 βίντεο</h1>
+    <h1>YouTube Channel Videos - Τελευταία 20 βίντεο</h1>
     <div id="video-container"></div>
 
     <script>
         // Χρήση CORS-anywhere για παρακάμψη του CORS
         var proxyUrl = 'https://cors-anywhere.herokuapp.com/';
-        // ΤΟ ΝΕΟ FEED ΠΟΥ ΜΟΥ ΕΔΩΣΕΣ
         var feedUrl = "https://www.youtube.com/feeds/videos.xml?channel_id=UCMiJRAwDNSNzuYeN2uWa0pA";
 
         $.ajax({
@@ -56,7 +57,7 @@
             dataType: "xml",
             success: function(data) {
                 var count = 0;
-                var maxVideos = 10;
+                var maxVideos = 20; // ΑΛΛΑΞΑΜΕ ΣΕ 20
                 
                 $('#video-container').empty();
                 
@@ -66,6 +67,7 @@
                     var title = $(this).find("title").text();
                     var link = $(this).find("link").attr("href");
                     
+                    // Φιλτράρισμα Shorts
                     if (title.toLowerCase().includes("shorts") || link.toLowerCase().includes("/shorts/")) {
                         return true;
                     }
@@ -91,7 +93,9 @@
                 if (count === 0) {
                     $('#video-container').html('<p>Δεν βρέθηκαν βίντεο ή όλα ήταν Shorts.</p>');
                 } else if (count < maxVideos) {
-                    $('#video-container').append('<p style="grid-column: 1 / -1;">Σημείωση: Βρέθηκαν μόνο ' + count + ' βίντεο (τα υπόλοιπα ήταν Shorts ή δεν ήταν διαθέσιμα).</p>');
+                    $('#video-container').append('<p style="grid-column: 1 / -1;">Σημείωση: Βρέθηκαν μόνο ' + count + ' βίντεο από τα 20 (τα υπόλοιπα ήταν Shorts ή δεν ήταν διαθέσιμα).</p>');
+                } else {
+                    $('#video-container').append('<p style="grid-column: 1 / -1;">Εμφανίζονται τα τελευταία 20 βίντεο.</p>');
                 }
             },
             error: function(xhr, status, error) {
