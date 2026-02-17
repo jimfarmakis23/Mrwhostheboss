@@ -41,15 +41,12 @@
             dataType: "xml",
             success: function(data) {
                 var count = 0;
-                var totalVideos = $(data).find("entry").length; // Μετράμε πόσα βίντεο υπάρχουν στο feed
-                console.log("Total videos in feed:", totalVideos); // Εκτύπωση του συνολικού αριθμού των βίντεο
-
-                // Φιλτράρισμα για να αγνοήσουμε τα YouTube Shorts
+                var maxVideos = 10;  // Θέλουμε να δείξουμε μόνο 10 βίντεο
                 $(data).find("entry").each(function() {
                     var title = $(this).find("title").text();
                     var link = $(this).find("link").attr("href");
                     
-                    // Ελέγχουμε αν το βίντεο είναι short και το αγνοούμε
+                    // Φιλτράρισμα για να αγνοήσουμε τα YouTube Shorts
                     if (title.toLowerCase().includes("shorts") || link.toLowerCase().includes("/shorts/")) {
                         return; // Αγνοούμε αυτό το βίντεο
                     }
@@ -63,20 +60,9 @@
                     $('#video-container').append(iframe);
                     count++;
 
-                    // Αν έχουμε προσθέσει 4 βίντεο, πάμε στην επόμενη σειρά
-                    if (count === 4) {
-                        count = 0;
-                        $('#video-container').append('<div style="clear:both"></div>');
-                    }
-
                     // Σταματάμε όταν έχουμε 10 βίντεο
-                    if (count >= 10) return false; // Διακόπτουμε όταν έχουμε 10 βίντεο
+                    if (count >= maxVideos) return false; // Διακόπτουμε όταν έχουμε 10 βίντεο
                 });
-
-                // Αν έχουμε λιγότερα από 10 βίντεο
-                if (count < 10) {
-                    console.log("Only found", count, "videos.");
-                }
             },
             error: function() {
                 alert("Δεν ήταν δυνατή η φόρτωση του RSS feed.");
