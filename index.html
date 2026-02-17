@@ -33,7 +33,10 @@
 
                 // Επεξεργασία κάθε link και δημιουργία iframe για το κάθε βίντεο
                 links.forEach(link => {
-                    const videoId = link.split('v=')[1] || link.split('/v/')[1]; // Εξαγωγή του videoId
+                    console.log("Link:", link);  // Εμφάνιση του link για έλεγχο
+                    const videoId = link.split('v=')[1].split('&')[0];  // Εξαγωγή του videoId
+
+                    console.log("videoId:", videoId);  // Εμφάνιση του videoId για έλεγχο
 
                     // Έλεγχος αν το videoId είναι έγκυρο (11 χαρακτήρες)
                     if (videoId && videoId.length === 11) {
