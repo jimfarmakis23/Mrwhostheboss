@@ -1,8 +1,9 @@
 name: Αυτόματη ενημέρωση links.txt από YouTube RSS
 
 on:
+  push:
+    branches: [ main ]
   schedule:
-    # Τρέχει κάθε 1 λεπτό
     - cron: '* * * * *'
   workflow_dispatch:
 
