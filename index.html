@@ -4,54 +4,114 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YouTube Videos</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <style>
         #video-container {
             display: grid;
-            grid-template-columns: repeat(4, 1fr); /* 4 στήλες */
-            gap: 20px; /* Απόσταση μεταξύ των στοιχείων */
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
             margin: 20px;
         }
-
+        
         iframe {
             width: 100%;
             height: 200px;
+            border-radius: 8px;
+        }
+        
+        h1 {
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+        
+        .error-message {
+            color: red;
+            text-align: center;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-family: Arial, sans-serif;
         }
     </style>
 </head>
 <body>
-    <h1>YouTube Channel Videos from Text File</h1>
-    <div id="video-container"></div>
+    <h1>YouTube Videos</h1>
+    <div id="video-container">
+        <div class="loading">Φόρτωση βίντεο...</div>
+    </div>
 
     <script>
-        // Λήψη του περιεχομένου του αρχείου links.txt
+        function extractVideoId(url) {
+            try {
+                // Για διάφορες μορφές YouTube URLs
+                const patterns = [
+                    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+                    /youtube\.com\/watch\?.+&v=([^&\n?#]+)/
+                ];
+                
+                for (let pattern of patterns) {
+                    const match = url.match(pattern);
+                    if (match) return match[1];
+                }
+                
+                // Αν δεν ταιριάζει, δοκίμασε με URL parsing
+                const urlObj = new URL(url);
+                return urlObj.searchParams.get('v');
+            } catch (e) {
+                console.error('Error parsing URL:', url, e);
+                return null;
+            }
+        }
+
+        // ΣΗΜΑΝΤΙΚΟ: Χρησιμοποίησε σχετική διαδρομή
         fetch('data/links.txt')
-            .then(response => response.text())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status} - Το αρχείο data/links.txt δεν βρέθηκε`);
+                }
+                return response.text();
+            })
             .then(text => {
-                const links = text.split('\n').filter(l => l.trim() !== '');  // Διαχωρίζουμε τις γραμμές του αρχείου
+                console.log('Raw text from file:', text); // Για έλεγχο
+                
+                // Διαχωρισμός γραμμών και αφαίρεση κενών
+                const links = text.split('\n')
+                    .map(line => line.trim())
+                    .filter(line => line && !line.startsWith('#')); // Αγνόησε κενά και σχόλια
+                
+                console.log('Processed links:', links); // Για έλεγχο
+                
                 const container = document.getElementById('video-container');
-
-                // Επεξεργασία κάθε link και δημιουργία iframe για το κάθε βίντεο
+                container.innerHTML = ''; // Καθάρισε το loading μήνυμα
+                
+                if (links.length === 0) {
+                    container.innerHTML = '<div class="error-message">Δεν βρέθηκαν links στο αρχείο</div>';
+                    return;
+                }
+                
                 links.forEach(link => {
-                    console.log("Link:", link);  // Εμφάνιση του link για έλεγχο
-                    const videoId = link.split('v=')[1].split('&')[0];  // Εξαγωγή του videoId
-
-                    console.log("videoId:", videoId);  // Εμφάνιση του videoId για έλεγχο
-
-                    // Έλεγχος αν το videoId είναι έγκυρο (11 χαρακτήρες)
+                    const videoId = extractVideoId(link);
+                    
                     if (videoId && videoId.length === 11) {
                         const iframe = document.createElement('iframe');
-                        iframe.src = "https://www.youtube.com/embed/" + videoId;
-                        iframe.width = "300";
-                        iframe.height = "200";
+                        iframe.src = `https://www.youtube.com/embed/${videoId}`;
+                        iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
                         iframe.allowFullscreen = true;
+                        iframe.loading = "lazy";
                         container.appendChild(iframe);
                     } else {
-                        console.error("Invalid video ID:", videoId);  // Αν το videoId δεν είναι σωστό
+                        console.error('Invalid video ID from link:', link);
                     }
                 });
             })
-            .catch(error => console.error('Error fetching the links.txt:', error));  // Αν δεν μπορεί να φορτώσει το αρχείο links.txt
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('video-container').innerHTML = 
+                    `<div class="error-message">Σφάλμα φόρτωσης: ${error.message}<br>Βεβαιώσου ότι το αρχείο data/links.txt υπάρχει</div>`;
+            });
     </script>
 </body>
 </html>
