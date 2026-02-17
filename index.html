@@ -1,24 +1,32 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YouTube Videos</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-    <style>
-        #video-container {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr); /* 4 στήλες */
-            gap: 20px; /* Απόσταση μεταξύ των στοιχείων */
-            margin: 20px;
-        }
-
-        iframe {
-            width: 100%;
-            height: 200px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>My Videos</title>
 </head>
 <body>
-    <h1>YouTube Channel Videos from Text File</h1>
-    <div id="
+
+<h2>Videos</h2>
+<div id="videos"></div>
+
+<script>
+fetch('data/links.txt')
+  .then(response => response.text())
+  .then(text => {
+    const links = text.split('\n').filter(l => l.trim() !== '');
+    const container = document.getElementById('videos');
+
+    links.forEach(link => {
+      const videoId = link.split('v=')[1];
+      const iframe = document.createElement('iframe');
+      iframe.src = "https://www.youtube.com/embed/" + videoId;
+      iframe.width = "300";
+      iframe.height = "200";
+      iframe.allowFullscreen = true;
+      container.appendChild(iframe);
+    });
+  });
+</script>
+
+</body>
+</html>
