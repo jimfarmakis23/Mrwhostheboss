@@ -2,38 +2,128 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YouTube Videos</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>YouTube Videos - Dark Mode</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background-color: #1a1a1a;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        h1 {
+            color: #ffffff;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: clamp(1.5rem, 5vw, 2.5rem);
+            font-weight: 400;
+            letter-spacing: 1px;
+        }
+        
         #video-container {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 20px;
-            margin: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
         }
         
-        iframe {
+        /* Τετράγωνο container για κάθε βίντεο */
+        .video-wrapper {
+            position: relative;
             width: 100%;
-            height: 200px;
-            border-radius: 8px;
+            padding-bottom: 100%; /* Κάνει το ύψος ίσο με το πλάτος - τετράγωνο */
+            background-color: #2d2d2d;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
         
-        h1 {
+        .video-wrapper:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 12px rgba(0, 0, 0, 0.4);
+        }
+        
+        .video-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            background-color: #000;
+        }
+        
+        /* Loading και error messages */
+        .loading, .error-message {
+            grid-column: 1 / -1;
             text-align: center;
-            font-family: Arial, sans-serif;
+            padding: 40px;
+            color: #ffffff;
+            background-color: #2d2d2d;
+            border-radius: 12px;
+            font-size: 1.1rem;
         }
         
         .error-message {
-            color: red;
-            text-align: center;
-            padding: 20px;
-            font-family: Arial, sans-serif;
+            color: #ff6b6b;
+            background-color: #2d2d2d;
+            border: 1px solid #ff6b6b;
         }
         
-        .loading {
-            text-align: center;
-            padding: 20px;
-            font-family: Arial, sans-serif;
+        /* Mobile: 2 στήλες */
+        @media screen and (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            #video-container {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+            
+            .video-wrapper {
+                border-radius: 8px;
+            }
+        }
+        
+        /* Μικρά κινητά: 1 στήλη (αν χρειάζεται) */
+        @media screen and (max-width: 480px) {
+            #video-container {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            h1 {
+                margin-bottom: 20px;
+            }
+        }
+        
+        /* Σκοτεινή μπάρα κύλισης για supported browsers */
+        ::-webkit-scrollbar {
+            width: 12px;
+            height: 12px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #2d2d2d;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #666;
+            border-radius: 6px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #888;
         }
     </style>
 </head>
@@ -44,9 +134,12 @@
     </div>
 
     <script>
-        function extractVideoId(url) {
+        function getVideoId(url) {
             try {
-                // Για διάφορες μορφές YouTube URLs
+                // Καθάρισε το URL από whitespace
+                url = url.trim();
+                
+                // Διάφορα patterns YouTube URLs
                 const patterns = [
                     /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
                     /youtube\.com\/watch\?.+&v=([^&\n?#]+)/
@@ -57,35 +150,30 @@
                     if (match) return match[1];
                 }
                 
-                // Αν δεν ταιριάζει, δοκίμασε με URL parsing
+                // Δοκίμασε με URL parsing
                 const urlObj = new URL(url);
                 return urlObj.searchParams.get('v');
             } catch (e) {
-                console.error('Error parsing URL:', url, e);
+                console.error('Error parsing URL:', url);
                 return null;
             }
         }
 
-        // ΣΗΜΑΝΤΙΚΟ: Χρησιμοποίησε σχετική διαδρομή
         fetch('data/links.txt')
             .then(response => {
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status} - Το αρχείο data/links.txt δεν βρέθηκε`);
+                    throw new Error(`Το αρχείο data/links.txt δεν βρέθηκε (Status: ${response.status})`);
                 }
                 return response.text();
             })
             .then(text => {
-                console.log('Raw text from file:', text); // Για έλεγχο
+                const container = document.getElementById('video-container');
+                container.innerHTML = '';
                 
-                // Διαχωρισμός γραμμών και αφαίρεση κενών
+                // Επεξεργασία γραμμών
                 const links = text.split('\n')
                     .map(line => line.trim())
-                    .filter(line => line && !line.startsWith('#')); // Αγνόησε κενά και σχόλια
-                
-                console.log('Processed links:', links); // Για έλεγχο
-                
-                const container = document.getElementById('video-container');
-                container.innerHTML = ''; // Καθάρισε το loading μήνυμα
+                    .filter(line => line && !line.startsWith('#')); // Αφαίρεσε κενά και σχόλια
                 
                 if (links.length === 0) {
                     container.innerHTML = '<div class="error-message">Δεν βρέθηκαν links στο αρχείο</div>';
@@ -93,24 +181,36 @@
                 }
                 
                 links.forEach(link => {
-                    const videoId = extractVideoId(link);
+                    const videoId = getVideoId(link);
                     
                     if (videoId && videoId.length === 11) {
+                        // Δημιούργησε wrapper για το τετράγωνο
+                        const wrapper = document.createElement('div');
+                        wrapper.className = 'video-wrapper';
+                        
                         const iframe = document.createElement('iframe');
                         iframe.src = `https://www.youtube.com/embed/${videoId}`;
                         iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
                         iframe.allowFullscreen = true;
                         iframe.loading = "lazy";
-                        container.appendChild(iframe);
+                        iframe.title = "YouTube video player";
+                        
+                        wrapper.appendChild(iframe);
+                        container.appendChild(wrapper);
                     } else {
-                        console.error('Invalid video ID from link:', link);
+                        console.error('Μη έγκυρο video ID από:', link);
                     }
                 });
             })
             .catch(error => {
-                console.error('Error:', error);
                 document.getElementById('video-container').innerHTML = 
-                    `<div class="error-message">Σφάλμα φόρτωσης: ${error.message}<br>Βεβαιώσου ότι το αρχείο data/links.txt υπάρχει</div>`;
+                    `<div class="error-message">
+                        ❌ Σφάλμα: ${error.message}<br><br>
+                        Βεβαιώσου ότι:<br>
+                        1. Το αρχείο data/links.txt υπάρχει στο repository<br>
+                        2. Το index.html είναι στο root φάκελο<br>
+                        3. Τα links είναι σωστά (ένα σε κάθε γραμμή)
+                    </div>`;
             });
     </script>
 </body>
