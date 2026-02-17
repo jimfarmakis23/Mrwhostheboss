@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Latest YouTube Videos</title>
+    <style>
+        /* Global Styles */
+        body {
+            background-color: #121212;
+            color: white;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            margin-bottom: 30px;
+        }
+
+        /* Grid Layout for Video Boxes */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            justify-items: center;
+        }
+
+        /* Individual Video Box */
+        .video-box {
+            background-color: #1f1f1f;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.7);
+        }
+
+        iframe {
+            width: 300px;
+            height: 200px;
+            border: none;
+            border-radius: 8px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .grid-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            iframe {
+                width: 250px;
+                height: 175px;
+            }
+        }
+
+        @media (max-width: 700px) {
+            .grid-container {
+                grid-template-columns: 1fr;
+            }
+            iframe {
+                width: 100%;
+                height: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Latest YouTube Videos</h1>
+
+    <div class="grid-container" id="video-grid">
+        <!-- Τα βίντεο θα φορτωθούν εδώ μέσω JavaScript -->
+    </div>
+
+    <script>
+        const feedUrl = "https://www.youtube.com/feeds/videos.xml?channel_id=UCjBCvQBVTh4XjPwtSMQNcFg"; // RSS Feed URL για τα βίντεο
+
+        // Λειτουργία για να τραβήξουμε τα βίντεο και να τα προσθέσουμε στο HTML
+        function fetchVideos() {
+            fetch(feedUrl)
+                .then(response => response.text())
+                .then(str => {
+                    const parser = new DOMParser();
+                    const xmlDoc = parser.parseFromString(str, "text/xml");
+                    const entries = xmlDoc.getElementsByTagName("entry");
+                    const videoGrid = document.getElementById('video-grid');
+                    videoGrid.innerHTML = ''; // Καθαρίζουμε το grid πριν την προσθήκη νέων βίντεο
+
+                    // Προσθήκη των 10 πρώτων βίντεο
+                    for (let i = 0; i < 10; i++) {
+                        const video = entries[i];
+                        const videoUrl = video.getElementsByTagName("link")[0].getAttribute("href");
+                        const videoTitle = video.getElementsByTagName("title")[0].textContent;
+                        
+                        // Δημιουργία του video box
+                        const videoBox = document.createElement('div');
+                        videoBox.classList.add('video-box');
+                        videoBox.innerHTML = `
+                            <iframe src="https://www.youtube.com/embed/${videoUrl.split('=')[1]}" 
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                    allowfullscreen></iframe>
+                            <p>${videoTitle}</p>
+                        `;
+                        
+                        // Προσθήκη του video box στο grid
+                        videoGrid.appendChild(videoBox);
+                    }
+                })
+                .catch(error => console.error('Error fetching videos:', error));
+        }
+
+        // Φορτώνουμε τα βίντεο μόλις ανοίξει η σελίδα
+        fetchVideos();
+    </script>
+
+</body>
+</html>
