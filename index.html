@@ -57,19 +57,23 @@
             dataType: "xml",
             success: function(data) {
                 var count = 0;
-                var maxVideos = 50; // ΑΛΛΑΞΑΜΕ ΣΕ 20
+                var maxVideos = 20;
+                var shortsSkipped = 0;
                 
                 $('#video-container').empty();
                 
+                // Συνεχίζουμε να ψάχνουμε μέχρι να βρούμε 20 κανονικά βίντεο
                 $(data).find("entry").each(function() {
+                    // Αν έχουμε ήδη 20 κανονικά βίντεο, σταματάμε
                     if (count >= maxVideos) return false;
                     
                     var title = $(this).find("title").text();
                     var link = $(this).find("link").attr("href");
                     
-                    // Φιλτράρισμα Shorts
+                    // Έλεγχος για Shorts
                     if (title.toLowerCase().includes("shorts") || link.toLowerCase().includes("/shorts/")) {
-                        return true;
+                        shortsSkipped++;
+                        return true; // Συνεχίζουμε στο επόμενο χωρίς να αυξήσουμε το count
                     }
 
                     var videoId = '';
@@ -86,16 +90,16 @@
                     if (videoId) {
                         var iframe = '<div class="video-item"><iframe src="https://www.youtube.com/embed/' + videoId + '" frameborder="0" allowfullscreen></iframe><p>' + title + '</p></div>';
                         $('#video-container').append(iframe);
-                        count++;
+                        count++; // Αυξάνουμε μόνο για κανονικά βίντεο
                     }
                 });
                 
                 if (count === 0) {
-                    $('#video-container').html('<p>Δεν βρέθηκαν βίντεο ή όλα ήταν Shorts.</p>');
+                    $('#video-container').html('<p>Δεν βρέθηκαν κανονικά βίντεο. Παρακάμφθηκαν ' + shortsSkipped + ' Shorts.</p>');
                 } else if (count < maxVideos) {
-                    $('#video-container').append('<p style="grid-column: 1 / -1;">Σημείωση: Βρέθηκαν μόνο ' + count + ' βίντεο από τα 20 (τα υπόλοιπα ήταν Shorts ή δεν ήταν διαθέσιμα).</p>');
+                    $('#video-container').append('<p style="grid-column: 1 / -1;">Σημείωση: Βρέθηκαν μόνο ' + count + ' κανονικά βίντεο (παρακάμφθηκαν ' + shortsSkipped + ' Shorts).</p>');
                 } else {
-                    $('#video-container').append('<p style="grid-column: 1 / -1;">Εμφανίζονται τα τελευταία 20 βίντεο.</p>');
+                    $('#video-container').append('<p style="grid-column: 1 / -1;">Εμφανίζονται τα τελευταία 20 κανονικά βίντεο (παρακάμφθηκαν ' + shortsSkipped + ' Shorts).</p>');
                 }
             },
             error: function(xhr, status, error) {
