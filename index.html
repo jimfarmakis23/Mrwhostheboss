@@ -11,12 +11,13 @@
     <ul id="video-list"></ul>
 
     <script>
-        // RSS feed URL του YouTube
-        var feedUrl = "https://www.youtube.com/feeds/videos.xml?channel_id=UCsTcErHg8oDvUnTzoqsYeNw";
-        
-        // Φόρτωμα του RSS feed μέσω AJAX
+        // Χρήση Proxy Server για να παρακάμψουμε CORS
+        var proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+        var feedUrl = "https://www.youtube.com/feeds/videos.xml?channel_id=UCsTcErHg8oDvUnTzoqsYeNw";  // Feed URL
+
+        // Φόρτωμα του RSS feed μέσω AJAX με χρήση του proxy server
         $.ajax({
-            url: feedUrl,
+            url: proxyUrl + feedUrl,
             type: "GET",
             dataType: "xml",
             success: function(data) {
