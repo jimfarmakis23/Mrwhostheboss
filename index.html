@@ -1,32 +1,54 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>My Videos</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Videos</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <style>
+        #video-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr); /* 4 στήλες */
+            gap: 20px; /* Απόσταση μεταξύ των στοιχείων */
+            margin: 20px;
+        }
+
+        iframe {
+            width: 100%;
+            height: 200px;
+        }
+    </style>
 </head>
 <body>
+    <h1>YouTube Channel Videos from Text File</h1>
+    <div id="video-container"></div>
 
-<h2>Videos</h2>
-<div id="videos"></div>
+    <script>
+        // Λήψη του περιεχομένου του αρχείου links.txt
+        fetch('data/links.txt')
+            .then(response => response.text())
+            .then(text => {
+                const links = text.split('\n').filter(l => l.trim() !== '');  // Διαχωρίζουμε τις γραμμές του αρχείου
+                const container = document.getElementById('video-container');
 
-<script>
-fetch('data/links.txt')
-  .then(response => response.text())
-  .then(text => {
-    const links = text.split('\n').filter(l => l.trim() !== '');
-    const container = document.getElementById('videos');
+                // Επεξεργασία κάθε link και δημιουργία iframe για το κάθε βίντεο
+                links.forEach(link => {
+                    const videoId = link.split('v=')[1] || link.split('/v/')[1]; // Εξαγωγή του videoId
 
-    links.forEach(link => {
-      const videoId = link.split('v=')[1];
-      const iframe = document.createElement('iframe');
-      iframe.src = "https://www.youtube.com/embed/" + videoId;
-      iframe.width = "300";
-      iframe.height = "200";
-      iframe.allowFullscreen = true;
-      container.appendChild(iframe);
-    });
-  });
-</script>
-
+                    // Έλεγχος αν το videoId είναι έγκυρο (11 χαρακτήρες)
+                    if (videoId && videoId.length === 11) {
+                        const iframe = document.createElement('iframe');
+                        iframe.src = "https://www.youtube.com/embed/" + videoId;
+                        iframe.width = "300";
+                        iframe.height = "200";
+                        iframe.allowFullscreen = true;
+                        container.appendChild(iframe);
+                    } else {
+                        console.error("Invalid video ID:", videoId);  // Αν το videoId δεν είναι σωστό
+                    }
+                });
+            })
+            .catch(error => console.error('Error fetching the links.txt:', error));  // Αν δεν μπορεί να φορτώσει το αρχείο links.txt
+    </script>
 </body>
 </html>
