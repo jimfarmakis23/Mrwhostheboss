@@ -44,6 +44,12 @@
                 $(data).find("entry").each(function() {
                     var title = $(this).find("title").text();
                     var link = $(this).find("link").attr("href");
+                    
+                    // Φιλτράρισμα για να αγνοήσουμε τα YouTube Shorts
+                    if (title.toLowerCase().includes("shorts") || link.toLowerCase().includes("/shorts/")) {
+                        return; // Αγνοούμε αυτό το βίντεο
+                    }
+
                     var videoId = link.split('=')[1]; // Ανάγνωση του video ID από τον σύνδεσμο
 
                     // Δημιουργία iframe για κάθε βίντεο
