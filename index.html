@@ -3,10 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
-  <title>YouTube Videos - No Ads (Working Solution)</title>
+  <title>YouTube Videos - Dark Mode</title>
 
   <style>
-    /* ΤΑ ΑΚΡΙΒΩΣ ΙΔΙΑ STYLES ΠΟΥ ΕΙΧΕΣ */
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
@@ -45,6 +44,7 @@
       box-shadow: 0 8px 12px rgba(0,0,0,0.4);
     }
 
+    /* 16:10 (όπως πριν) */
     .video-media {
       position: relative;
       width: 100%;
@@ -61,6 +61,7 @@
       background: #000;
     }
 
+    /* Thumbnail button */
     .video-thumb {
       position: absolute;
       inset: 0;
@@ -82,6 +83,7 @@
       filter: saturate(1.05) contrast(1.05);
     }
 
+    /* Play overlay */
     .video-thumb::after {
       content: "";
       width: 64px;
@@ -111,6 +113,7 @@
       line-height: 1.25rem;
       font-weight: 400;
       opacity: 0.95;
+
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
@@ -150,7 +153,7 @@
 </head>
 
 <body>
-  <h1>YouTube Videos (Χωρίς Διαφημίσεις - 100% Working)</h1>
+  <h1>YouTube Videos</h1>
 
   <div id="video-container">
     <div class="loading">Φόρτωση βίντεο...</div>
@@ -176,51 +179,17 @@
       }
     }
 
-    // ΛΙΣΤΑ ΜΕ ΣΙΓΟΥΡΑ INSTANCES ΠΟΥ ΔΟΥΛΕΥΟΥΝ
-    const WORKING_INSTANCES = [
-      'https://invidious.projectsegfau.lt',
-      'https://inv.odyssey346.dev',
-      'https://youtube.076.ne.jp',
-      'https://inv.bp.projectsegfau.lt',
-      'https://inv.zzls.xyz',
-      'https://invidious.slipfox.xyz',
-      'https://inv.vern.cc'
-    ];
-    
-    // Δοκιμή κάθε instance μέχρι να βρούμε ένα που ανταποκρίνεται
-    async function findWorkingInstance() {
-      for (const instance of WORKING_INSTANCES) {
-        try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 3000);
-          
-          const response = await fetch(instance, { 
-            method: 'HEAD',
-            signal: controller.signal 
-          });
-          
-          clearTimeout(timeoutId);
-          
-          if (response.ok) {
-            console.log('✅ Βρέθηκε working instance:', instance);
-            return instance;
-          }
-        } catch (e) {
-          console.log('❌ Instance failed:', instance);
-        }
-      }
-      // Αν δεν βρεθεί κανένα, χρησιμοποιούμε το πιο σταθερό
-      return 'https://invidious.projectsegfau.lt';
-    }
+    // Κανονικό YouTube embed (όχι nocookie)
+    const EMBED_BASE = "https://www.youtube-nocookie.com/embed/";
 
-    function buildEmbedSrc(videoId, instance) {
+    function buildEmbedSrc(videoId) {
       const params = new URLSearchParams({
         autoplay: "1",
         rel: "0",
         modestbranding: "1",
         playsinline: "1"
       });
-      return `${instance}/embed/${videoId}?${params.toString()}`;
+      return `${EMBED_BASE}${videoId}?${params.toString()}`;
     }
 
     // ---- Titles (oEmbed) ----
@@ -245,7 +214,6 @@
       }
     }
 
-    // ΚΥΡΙΑ ΣΥΝΑΡΤΗΣΗ
     fetch('data/links.txt')
       .then(response => {
         if (!response.ok) {
@@ -253,9 +221,9 @@
         }
         return response.text();
       })
-      .then(async text => {
+      .then(text => {
         const container = document.getElementById('video-container');
-        container.innerHTML = '<div class="loading">Αναζήτηση διαθέσιμου server...</div>';
+        container.innerHTML = '';
 
         const links = text.split('\n')
           .map(line => line.trim())
@@ -266,10 +234,7 @@
           return;
         }
 
-        // Βρίσκουμε ένα instance που δουλεύει
-        const workingInstance = await findWorkingInstance();
-        container.innerHTML = '';
-
+        // Lazy-load thumbnails + titles όταν πλησιάζουν
         const observer = new IntersectionObserver((entries, obs) => {
           for (const entry of entries) {
             if (!entry.isIntersecting) continue;
@@ -278,6 +243,7 @@
             const videoId = thumb.dataset.videoId;
             const titleEl = document.getElementById(`title-${thumb.dataset.idx}`);
 
+            // Thumbnail
             if (!thumb.dataset.thumbLoaded) {
               const img = document.createElement('img');
               const maxres = `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`;
@@ -290,6 +256,7 @@
               thumb.dataset.thumbLoaded = "1";
             }
 
+            // Title
             if (titleEl && !titleEl.dataset.titleLoaded) {
               titleEl.dataset.titleLoaded = "1";
               fetchTitle(videoId).then(t => { titleEl.textContent = t; });
@@ -324,7 +291,7 @@
           function loadIframe() {
             if (media.querySelector('iframe')) return;
             const iframe = document.createElement('iframe');
-            iframe.src = buildEmbedSrc(videoId, workingInstance);
+            iframe.src = buildEmbedSrc(videoId);
             iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
             iframe.allowFullscreen = true;
             iframe.loading = "eager";
@@ -355,6 +322,7 @@
           observer.observe(thumb);
         });
 
+        // Boost: φόρτωσε thumbnails/τίτλους για τα πρώτα 3 άμεσα
         const firstBoost = Math.min(3, links.length);
         for (let i = 0; i < firstBoost; i++) {
           const thumb = container.querySelector(`.video-thumb[data-idx="${i}"]`);
